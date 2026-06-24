@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Helper - File & Image Utilities</title>
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="https://i.ibb.co/8LnjpLQx/Test.jpg">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Plus Jakarta Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- jsPDF Library for Client-Side PDF Generation & Encryption -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- PDF.js Library for Client-Side PDF Parsing & Rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    input[type="range"] {
+      accent-color: #4f46e5;
+    }
+    .compare-handle {
+      transform: translateX(-50%);
+    }
+    .accordion-content {
+      transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out;
+    }
+    /* Simple smooth page transitions */
+    .view-panel {
+      transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    }
+    .ghost-hover:hover {
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    /* CUSTOM LOADER ANIMATION */
+    .loader {
+      width: 65px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    .loader:before,
+    .loader:after {
+      content: "";
+      position: absolute;
+      border-radius: 50px;
+      box-shadow: 0 0 0 3px inset #fff;
+      animation: l4 2.5s infinite;
+    }
+    .loader:after {
+      animation-delay: -1.25s;
+    }
+    @keyframes l4 {
+      0% {
+        inset: 0 35px 35px 0;
+      }
+      12.5% {
+        inset: 0 35px 0 0;
+      }
+      25% {
+        inset: 35px 35px 0 0;
+      }
+      37.5% {
+        inset: 35px 0 0 0;
+      }
+      50% {
+        inset: 35px 0 0 35px;
+      }
+      62.5% {
+        inset: 0 0 0 35px;
+      }
+      75% {
+        inset: 0 0 35px 35px;
+      }
+      87.5% {
+        inset: 0 0 35px 0;
+      }
+      100% {
+        inset: 0 35px 35px 0;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- ================= DYNAMIC FULLSCREEN LOADER OVERLAY ================= -->
+  <div id="loadingOverlay" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex-col items-center justify-center text-white select-none">
+    <div class="loader"></div>
+    <p id="loadingText" class="mt-6 text-sm font-semibold tracking-widest text-slate-200 uppercase text-center max-w-xs px-4">Processing...</p>
+  </div>
+
+  <!-- ================= CUSTOM DIALOG OVERLAY (No standard browser alerts) ================= -->
+  <div id="customAlertModal" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform transition-transform scale-95 duration-200">
+      <div class="flex items-center gap-3 text-rose-500 mb-3">
+        <div class="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center">
+          <i data-lucide="shield-alert" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-extrabold text-slate-900 text-base">Alert System</h3>
+      </div>
+      <p id="customAlertText" class="text-sm font-semibold text-slate-500 mb-6 leading-relaxed"></p>
+      <button id="closeAlertBtn" class="w-full py-3 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition active:scale-95">
+        Acknowledge
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= HEADER (MINIMALIST & FLOATING ROUNDED ON MOBILE) ================= -->
+  <header class="sticky top-0 z-30 w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-0 bg-transparent sm:bg-white sm:border-b sm:border-slate-100 sm:shadow-sm">
+    <div class="max-w-7xl mx-auto bg-white/95 backdrop-blur-md sm:bg-transparent rounded-2xl sm:rounded-none border border-slate-100 sm:border-none shadow-md sm:shadow-none px-4 py-3 sm:px-0 sm:py-0 h-14 sm:h-16 flex items-center justify-between transition-all duration-300">
+      
+      <!-- Brand Logo Container -->
+      <div class="flex items-center space-x-3 cursor-pointer" id="logoHomeBtn">
+        <img src="https://i.ibb.co/8LnjpLQx/Test.jpg" alt="Helper Logo" class="w-9 h-9 rounded-xl object-cover shadow-md shadow-indigo-100/50" onerror="this.onerror=null; this.src='https://placehold.co/36x36/4f46e5/ffffff?text=H'">
+        <div>
+          <span class="font-bold text-base sm:text-lg text-slate-950 tracking-tight">Helper</span>
+          <span class="text-[10px] sm:text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded ml-1.5 sm:ml-2">Suite v2.0</span>
+        </div>
+      </div>
+      
+      <!-- Desktop Actions -->
+      <div class="hidden sm:flex items-center space-x-4">
+        <button id="navHomeBtn" class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition flex items-center gap-1.5">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i> Tools Directory
+        </button>
+        <span class="inline-block h-4 w-px bg-slate-200"></span>
+        <div class="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-lg">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+          <span>100% Client-Side (Private)</span>
+        </div>
+      </div>
+
+      <!-- Mobile Hamburger Toggle Button -->
+      <button id="mobileMenuToggle" class="sm:hidden w-10 h-10 flex items-center justify-center text-slate-600 hover:text-indigo-600 rounded-xl hover:bg-slate-50 transition active:scale-95" aria-label="Toggle Navigation">
+        <i data-lucide="menu" class="w-6 h-6" id="menuIcon"></i>
+      </button>
+    </div>
+
+    <!-- Mobile Dropdown Navigation Menu -->
+    <div id="mobileMenu" class="hidden sm:hidden mt-2 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-lg p-4 space-y-3 transition-all duration-300">
+      <button id="mobileNavHomeBtn" class="w-full text-left py-2.5 px-3.5 text-sm font-semibold text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition flex items-center gap-2">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i> Tools Directory
+      </button>
+      <div class="border-t border-slate-100 my-2"></div>
+      <div class="text-xs text-slate-500 flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl font-medium">
+        <i data-lucide="shield-check" class="w-4.5 h-4.5 text-emerald-500"></i>
+        <span>100% Client-Side (Local Workspace)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= PORTAL / DIRECTORY VIEW ================= -->
+  <main id="portalView" class="view-panel flex-grow flex flex-col justify-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">Helper</h1>
+      <p class="text-slate-500 text-base">Select one of our ultra-fast, local-processing browser applications below. No server uploads, total data privacy.</p>
+    </div>
+
+    <!-- Match Reference Rounded Boxes with Premium Images - Now a balanced 4-column Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto w-full mb-16">
+      
+      <!-- Box 1 Wrapper -->
+      <div class="flex flex-col items-center">
+        <!-- Box 1: Image Compressor with Custom Background Image -->
+        <div id="openCompressorCard" class="group relative rounded-[2.5rem] aspect-[1.3] cursor-pointer shadow-lg overflow-hidden transform transition-all duration-300 hover:-translate-y-2 select-none w-full bg-slate-400">
+          <img src="https://i.ibb.co/n8f0LkmY/Jun-23-2026-01-20-50-PM.png" alt="Image Compression Workspace" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 z-0">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-slate-900/10 z-10"></div>
+        </div>
+        <div class="mt-4 text-center">
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-400 hover:text-indigo-600 transition-colors duration-200 font-mono">IMAGE COMPRESSOR</span>
+        </div>
+      </div>
+
+      <!-- Box 2 Wrapper -->
+      <div class="flex flex-col items-center">
+        <!-- Box 2: JPG to PDF Converter with Custom Background Image -->
+        <div id="openPdfCard" class="group relative rounded-[2.5rem] aspect-[1.3] cursor-pointer shadow-lg overflow-hidden transform transition-all duration-300 hover:-translate-y-2 select-none w-full bg-slate-400">
+          <img src="https://i.ibb.co/DHqfs25Z/Chat-GPT-Image-Jun-23-2026-01-22-49-PM.png" alt="Document PDF Workspace" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 z-0">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-slate-900/10 z-10"></div>
+        </div>
+        <div class="mt-4 text-center">
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-400 hover:text-emerald-600 transition-colors duration-200 font-mono">JPG TO PDF</span>
+        </div>
+      </div>
+
+      <!-- Box 3 Wrapper -->
+      <div class="flex flex-col items-center">
+        <!-- Box 3: PDF Locker with Custom Background Image -->
+        <div id="openLockerCard" class="group relative rounded-[2.5rem] aspect-[1.3] cursor-pointer shadow-lg overflow-hidden transform transition-all duration-300 hover:-translate-y-2 select-none w-full bg-slate-400">
+          <img src="https://i.ibb.co/fzc5RTc1/Chat-GPT-Image-Jun-23-2026-09-29-12-PM.png" alt="PDF Protection Workspace" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 z-0">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-slate-900/10 z-10"></div>
+        </div>
+        <div class="mt-4 text-center">
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-400 hover:text-rose-600 transition-colors duration-200 font-mono">PDF LOCKER</span>
+        </div>
+      </div>
+
+      <!-- Box 4 Wrapper -->
+      <div class="flex flex-col items-center">
+        <!-- Box 4: PDF Signature with Custom Background Image -->
+        <div id="openSignerCard" class="group relative rounded-[2.5rem] aspect-[1.3] cursor-pointer shadow-lg overflow-hidden transform transition-all duration-300 hover:-translate-y-2 select-none w-full bg-slate-400">
+          <img src="https://i.ibb.co/MDJ3CRyg/Chat-GPT-Image-Jun-23-2026-09-46-43-PM.png" alt="PDF Signature Workspace" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 z-0">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-slate-900/10 z-10"></div>
+        </div>
+        <div class="mt-4 text-center">
+          <span class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-400 hover:text-indigo-600 transition-colors duration-200 font-mono">PDF SIGNER</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= HOW IT WORKS SECTION ================= -->
+    <section class="max-w-7xl mx-auto w-full border-t border-slate-100 pt-16 mb-16">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">How It Works</h2>
+        <p class="text-slate-500 text-sm mt-2">Zero learning curves. Local browser operations built for absolute efficiency.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Image Compressor Steps -->
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+          <h3 class="font-bold text-base text-indigo-950 flex items-center gap-2 mb-6">
+            <i data-lucide="image" class="w-5 h-5 text-indigo-500"></i>
+            Image Compressor
+          </h3>
+          <ol class="space-y-4 text-xs text-slate-500 leading-relaxed">
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">1</span>Upload multiple image formats (PNG, JPG, WebP).</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">2</span>Adjust target dimensions and canvas quality slider.</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">3</span>Verify the compression footprint on the live comparison.</li>
+          </ol>
+        </div>
+
+        <!-- JPG to PDF Steps -->
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+          <h3 class="font-bold text-base text-emerald-950 flex items-center gap-2 mb-6">
+            <i data-lucide="file-check" class="w-5 h-5 text-emerald-500"></i>
+            JPG to PDF Converter
+          </h3>
+          <ol class="space-y-4 text-xs text-slate-500 leading-relaxed">
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">1</span>Load the pages as image sheets.</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">2</span>Sort positions and rearrange compilation sequences.</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">3</span>Compile to structured portrait or landscape PDF sheets.</li>
+          </ol>
+        </div>
+
+        <!-- PDF Locker Steps -->
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+          <h3 class="font-bold text-base text-rose-950 flex items-center gap-2 mb-6">
+            <i data-lucide="lock" class="w-5 h-5 text-rose-500"></i>
+            PDF Locker Secure
+          </h3>
+          <ol class="space-y-4 text-xs text-slate-500 leading-relaxed">
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">1</span>Import unprotected PDF directly to local storage.</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">2</span>Set user passwords and custom restriction flags.</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">3</span>Export instantly to apply 128-bit PDF standard encryption.</li>
+          </ol>
+        </div>
+
+        <!-- PDF Signer Steps -->
+        <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+          <h3 class="font-bold text-base text-indigo-950 flex items-center gap-2 mb-6">
+            <i data-lucide="signature" class="w-5 h-5 text-indigo-500"></i>
+            PDF Signer Workspace
+          </h3>
+          <ol class="space-y-4 text-xs text-slate-500 leading-relaxed">
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">1</span>Import standard PDF. Draw signature on secure touchpad canvas.</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">2</span>Click signature preview and tap on a specific page viewport.</li>
+            <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">3</span>Scale dynamically, verify alignment, compile signed document.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= BEFORE & AFTER SECTION ================= -->
+    <section class="max-w-7xl mx-auto w-full border-t border-slate-100 pt-16">
+      <div class="text-center mb-10">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Before & After Results</h2>
+        <p class="text-slate-500 text-sm mt-2">See how our local processing engine optimizes assets without compromising visual integrity.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <!-- Visual Compressor Showcase -->
+        <div class="space-y-4">
+          <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i>
+            Image Optimization Fidelity
+          </h3>
+          <p class="text-slate-500 text-xs leading-relaxed">
+            By analyzing pixels directly on your GPU, the Helper algorithm detects color gradients and trims hidden file metadata to achieve massive compression rates without visual degradation.
+          </p>
+          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-semibold text-slate-500">Typical Compression Result</span>
+              <span class="text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">-85% Size Saved</span>
+            </div>
+            <!-- Progress graphic representing size diff -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[11px] font-semibold text-slate-600">
+                <span>Before (Original)</span>
+                <span>4.8 MB</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2">
+                <div class="bg-slate-400 h-2 rounded-full" style="width: 100%"></div>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex justify-between text-[11px] font-semibold text-indigo-600">
+                <span>After (Optimized)</span>
+                <span>720 KB</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2">
+                <div class="bg-indigo-600 h-2 rounded-full" style="width: 15%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual PDF Showcase -->
+        <div class="space-y-4">
+          <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4 text-emerald-500"></i>
+            Document Layout Preservation
+          </h3>
+          <p class="text-slate-500 text-xs leading-relaxed">
+            Instead of simply wrapping single images, Helper calculates accurate aspect ratios to perfectly stretch or fit photos into high-fidelity multi-page standard documents (A4/Letter).
+          </p>
+          <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 flex gap-4 items-center">
+            <!-- Left side visual representing loose JPGs -->
+            <div class="flex -space-x-3 select-none">
+              <div class="w-10 h-10 rounded bg-indigo-100 border border-indigo-200 shadow flex items-center justify-center text-[10px] font-bold text-indigo-500 transform -rotate-12">JPG</div>
+              <div class="w-10 h-10 rounded bg-indigo-100 border border-indigo-200 shadow flex items-center justify-center text-[10px] font-bold text-indigo-500 transform rotate-6">PNG</div>
+              <div class="w-10 h-10 rounded bg-indigo-100 border border-indigo-200 shadow flex items-center justify-center text-[10px] font-bold text-indigo-500 transform -rotate-6">JPG</div>
+            </div>
+            <!-- Arrow icon pointing right -->
+            <div class="text-slate-300">
+              <i data-lucide="arrow-right-circle" class="w-6 h-6"></i>
+            </div>
+            <!-- Right side visual representing clean PDF -->
+            <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg shadow-sm">
+              <i data-lucide="file-text" class="w-6 h-6 text-emerald-600"></i>
+              <div class="text-left">
+                <p class="text-[11px] font-bold text-emerald-950">Compiled PDF</p>
+                <p class="text-[9px] text-emerald-700">Unified 3-Page Document</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= WORKSPACE: IMAGE COMPRESSOR ================= -->
+  <main id="compressorView" class="view-panel hidden flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <button class="backToHomeBtn px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Helper Directory
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-indigo-600 animate-pulse"></span>
+        <span class="text-xs text-slate-500 font-semibold">Tool: Compressify Engine</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      <!-- Settings Panel -->
+      <section class="lg:col-span-4 space-y-4 sm:space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div id="settingsAccordionHeader" class="p-5 flex items-center justify-between cursor-pointer lg:cursor-default select-none bg-white">
+            <h2 class="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-5 h-5 text-indigo-500"></i>
+              Compression Settings
+            </h2>
+            <div class="flex items-center gap-3">
+              <button id="resetSettingsBtn" class="text-xs text-slate-400 hover:text-indigo-600 font-semibold transition flex items-center gap-1 py-1 px-2 hover:bg-slate-50 rounded-lg">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+              </button>
+              <div class="lg:hidden w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 transition-transform duration-200" id="accordionArrow">
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+          </div>
+
+          <div id="settingsAccordionContent" class="accordion-content border-t border-slate-50 lg:border-t-0 p-5 pt-0 lg:pt-5 space-y-5 sm:space-y-6 hidden lg:block overflow-hidden">
+            <!-- Quality Range Slider -->
+            <div class="space-y-2.5">
+              <div class="flex justify-between items-center text-sm">
+                <label for="qualitySlider" class="font-semibold text-slate-700">Target Quality</label>
+                <span id="qualityVal" class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">80%</span>
+              </div>
+              <input type="range" id="qualitySlider" min="5" max="100" value="80" class="w-full h-2.5 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+              <div class="flex justify-between text-[11px] text-slate-400 font-medium">
+                <span>High compression</span>
+                <span>Balanced</span>
+                <span>Best Quality</span>
+              </div>
+            </div>
+
+            <!-- Format conversion -->
+            <div class="space-y-2">
+              <label for="formatSelect" class="block text-sm font-semibold text-slate-700">Convert Format</label>
+              <div class="relative">
+                <select id="formatSelect" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none font-medium">
+                  <option value="original">Keep Original Format</option>
+                  <option value="jpeg">Convert to JPEG (Best for photos)</option>
+                  <option value="png">Convert to PNG (Lossless/Transparency)</option>
+                  <option value="webp">Convert to WebP (Modern/Highly optimized)</option>
+                </select>
+                <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                  <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dimensions / Resizing -->
+            <div class="space-y-2.5">
+              <div class="flex justify-between items-center text-sm">
+                <label for="resizeSlider" class="font-semibold text-slate-700">Max Dimension Scale</label>
+                <span id="resizeVal" class="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">100%</span>
+              </div>
+              <input type="range" id="resizeSlider" min="10" max="100" value="100" step="5" class="w-full h-2.5 bg-slate-100 rounded-lg appearance-none cursor-pointer">
+              <div class="flex justify-between text-[11px] text-slate-400 font-medium">
+                <span>10% (Tiny)</span>
+                <span>50%</span>
+                <span>100% (No resize)</span>
+              </div>
+            </div>
+
+            <div class="pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-slate-400 gap-2 font-medium">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Real-time preview updates
+              </span>
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-indigo-500"></i> Local GPU Accelerated
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-tr from-indigo-50/70 to-purple-50/70 p-5 rounded-2xl border border-indigo-50">
+          <h3 class="font-bold text-xs sm:text-sm text-indigo-900 flex items-center gap-2 mb-2">
+            <i data-lucide="help-circle" class="w-4 h-4"></i> Secure Client-Side Engine
+          </h3>
+          <p class="text-xs text-indigo-950/70 leading-relaxed font-medium">
+            Your images are compressed entirely in your browser using the local HTML5 Canvas API. No files are uploaded to any server, safeguarding your privacy while offering blazing fast compression.
+          </p>
+        </div>
+      </section>
+
+      <!-- Main Upload & Output Panel -->
+      <section class="lg:col-span-8 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+            <h3 class="font-bold text-base text-slate-900">Images</h3>
+            <span id="fileCounter" class="hidden text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg"></span>
+          </div>
+
+          <div class="p-4 sm:p-6">
+            <div id="dropZone" class="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/50 rounded-xl sm:rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition relative group">
+              <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 shadow-sm group-hover:scale-105 transition-transform duration-300 mb-3.5">
+                <i data-lucide="upload" class="w-5 h-5 text-slate-500 group-hover:text-indigo-600 transition"></i>
+              </div>
+              <button class="bg-white border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 hover:border-slate-300 transition inline-flex items-center gap-2 mb-3">
+                <i data-lucide="file-image" class="w-4 h-4 text-slate-500"></i>
+                Upload Images
+              </button>
+              <p class="text-sm font-medium text-slate-600 mb-1">Choose images or drag & drop it here.</p>
+              <p class="text-[11px] text-slate-400 font-medium">JPG, JPEG, PNG and WEBP. Max 20 MB.</p>
+            </div>
+
+            <!-- Preview List -->
+            <div id="previewGridContainer" class="hidden mt-6 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Selected & Processed Items</h4>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <button id="downloadAllBtn" class="flex-1 sm:flex-initial justify-center text-xs font-bold bg-indigo-600 text-white px-4 py-2.5 rounded-xl hover:bg-indigo-700 transition flex items-center gap-1.5 shadow-sm shadow-indigo-100">
+                    <i data-lucide="download-cloud" class="w-4 h-4"></i> Download All
+                  </button>
+                  <button id="clearAllBtn" class="text-xs font-bold bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl hover:bg-slate-200 transition flex items-center gap-1.5">
+                    <i data-lucide="trash" class="w-4 h-4"></i> Clear All
+                  </button>
+                </div>
+              </div>
+
+              <div id="thumbnailsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                <!-- Filled via Javascript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparison Slider Canvas panel -->
+        <div id="comparisonPanel" class="hidden bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4 sm:space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                <i data-lucide="split" class="w-5 h-5 text-indigo-500"></i>
+                Visual Comparison Slider
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Drag slider to compare Original (Left) vs Compressed (Right)</p>
+            </div>
+            <div class="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
+              <span class="text-xs text-slate-400 font-semibold whitespace-nowrap">Active Image:</span>
+              <select id="compareSelector" class="w-full sm:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="relative w-full aspect-video rounded-xl bg-slate-950 overflow-hidden select-none border border-slate-200 max-h-[480px]">
+            <img id="originalCompareImg" class="absolute inset-0 w-full h-full object-contain pointer-events-none" src="" alt="Original View">
+            <div id="compressedCompareWrapper" class="absolute inset-y-0 right-0 left-0 w-full overflow-hidden pointer-events-none">
+              <img id="compressedCompareImg" class="absolute inset-0 w-full h-full object-contain pointer-events-none max-w-none" src="" alt="Compressed View">
+            </div>
+            <div id="sliderBar" class="absolute inset-y-0 w-1 bg-white shadow-[0_0_12px_rgba(0,0,0,0.6)] cursor-ew-resize flex items-center justify-center z-10" style="left: 50%; touch-action: none;">
+              <div class="compare-handle w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-white shadow-lg border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs select-none hover:scale-110 active:scale-95 transition-transform duration-150">
+                <i data-lucide="grip-vertical" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <span class="absolute top-3 left-3 bg-slate-950/80 text-white text-[9px] uppercase font-bold tracking-widest px-2 py-1 rounded-md backdrop-blur z-20">Original</span>
+            <span class="absolute top-3 right-3 bg-indigo-600/90 text-white text-[9px] uppercase font-bold tracking-widest px-2 py-1 rounded-md backdrop-blur z-20">Compressed</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 bg-slate-50/80 p-4 rounded-xl text-center">
+            <div class="flex sm:flex-col justify-between sm:justify-center items-center">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Original Size</p>
+              <p id="originalDashboardSize" class="text-xs sm:text-sm font-bold text-slate-800 mt-0.5">-</p>
+            </div>
+            <div class="border-t sm:border-t-0 sm:border-x border-slate-200 pt-2.5 sm:pt-0 flex sm:flex-col justify-between sm:justify-center items-center">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Compressed Size</p>
+              <p id="compressedDashboardSize" class="text-xs sm:text-sm font-bold text-indigo-600 mt-0.5">-</p>
+            </div>
+            <div class="border-t sm:border-t-0 pt-2.5 sm:pt-0 flex sm:flex-col justify-between sm:justify-center items-center">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Space Saved</p>
+              <p id="savingsDashboardPercentage" class="text-xs sm:text-sm font-bold text-emerald-600 mt-0.5">-</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ================= WORKSPACE: JPG TO PDF CONVERTER ================= -->
+  <main id="pdfView" class="view-panel hidden flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <button class="backToHomeBtn px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Helper Directory
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
+        <span class="text-xs text-slate-500 font-semibold">Tool: JPG to PDF Compiler</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      <!-- Controls Layout -->
+      <section class="lg:col-span-4 space-y-4 sm:space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
+          <h2 class="font-bold text-base text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
+            <i data-lucide="file-text" class="w-5 h-5 text-emerald-500"></i>
+            Document settings
+          </h2>
+
+          <!-- Page size -->
+          <div class="space-y-2">
+            <label for="pageSize" class="block text-sm font-semibold text-slate-700">Page Size</label>
+            <div class="relative">
+              <select id="pageSize" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 appearance-none font-medium">
+                <option value="a4">A4 (Standard)</option>
+                <option value="letter">US Letter</option>
+                <option value="fit">Fit Image (No scaling bounds)</option>
+              </select>
+              <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Orientation -->
+          <div class="space-y-2">
+            <label for="pdfOrientation" class="block text-sm font-semibold text-slate-700">Orientation</label>
+            <div class="relative">
+              <select id="pdfOrientation" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 appearance-none font-medium">
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+                <option value="auto">Auto-detect based on Image</option>
+              </select>
+              <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Margins -->
+          <div class="space-y-2">
+            <label for="pdfMargin" class="block text-sm font-semibold text-slate-700">Page Margins</label>
+            <div class="relative">
+              <select id="pdfMargin" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 appearance-none font-medium">
+                <option value="none">No Margin (0px)</option>
+                <option value="thin">Thin Margin (15px)</option>
+                <option value="normal">Normal Margin (30px)</option>
+              </select>
+              <div class="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom PDF Title -->
+          <div class="space-y-2">
+            <label for="pdfFileName" class="block text-sm font-semibold text-slate-700">Output PDF Filename</label>
+            <input type="text" id="pdfFileName" value="converted_documents" placeholder="Enter file name" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium">
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-tr from-emerald-50/70 to-teal-50/70 p-5 rounded-2xl border border-emerald-50">
+          <h3 class="font-bold text-xs sm:text-sm text-emerald-900 flex items-center gap-2 mb-2">
+            <i data-lucide="info" class="w-4 h-4"></i> Reorder Images via Drag & Drop
+          </h3>
+          <p class="text-xs text-emerald-950/70 leading-relaxed font-medium">
+            Once you load your files, you can quickly rearrange their print sequence by clicking the sorting directional tools on each page thumbnail in the list below.
+          </p>
+        </div>
+      </section>
+
+      <!-- Compiler Grid Section -->
+      <section class="lg:col-span-8 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+            <h3 class="font-bold text-base text-slate-900">Loaded Image Sheets</h3>
+            <span id="pdfFileCounter" class="hidden text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg"></span>
+          </div>
+
+          <div class="p-4 sm:p-6">
+            <div id="pdfDropZone" class="border-2 border-dashed border-slate-200 hover:border-emerald-400 bg-slate-50/50 rounded-xl sm:rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition relative group">
+              <input type="file" id="pdfFileInput" multiple accept="image/jpeg,image/png,image/webp" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 shadow-sm group-hover:scale-105 transition-transform duration-300 mb-3.5">
+                <i data-lucide="file-plus" class="w-5 h-5 text-slate-500 group-hover:text-emerald-600 transition"></i>
+              </div>
+              <button class="bg-white border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 hover:border-slate-300 transition inline-flex items-center gap-2 mb-3">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-slate-500"></i>
+                Select Images
+              </button>
+              <p class="text-sm font-medium text-slate-600 mb-1">Add conversion images or drop files here.</p>
+              <p class="text-[11px] text-slate-400 font-medium">JPEG, JPG, PNG and WEBP file support. Unlimited pages.</p>
+            </div>
+
+            <!-- PDF Compilation list -->
+            <div id="pdfPreviewGridContainer" class="hidden mt-6 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Compilation List Queue</h4>
+                  <p class="text-[10px] text-slate-500 font-medium">Sort sequence determines page layout structure</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <button id="generatePdfBtn" class="flex-1 sm:flex-initial justify-center text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl transition flex items-center gap-1.5 shadow-sm shadow-emerald-100">
+                    <i data-lucide="file-check" class="w-4 h-4"></i> Compile & Download PDF
+                  </button>
+                  <button id="pdfClearAllBtn" class="text-xs font-bold bg-slate-200 text-slate-600 px-4 py-3 rounded-xl hover:bg-slate-300 transition flex items-center gap-1.5">
+                    <i data-lucide="trash" class="w-4 h-4"></i> Clear List
+                  </button>
+                </div>
+              </div>
+
+              <!-- List Cards Container -->
+              <div id="pdfThumbnailsContainer" class="space-y-3">
+                <!-- Javascript maps individual list layouts -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ================= WORKSPACE: PDF LOCKER ================= -->
+  <main id="lockerView" class="view-panel hidden flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <button class="backToHomeBtn px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Helper Directory
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-rose-600 animate-pulse"></span>
+        <span class="text-xs text-slate-500 font-semibold">Tool: PDF Locker Secure</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      <!-- Settings Panel -->
+      <section class="lg:col-span-4 space-y-4 sm:space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
+          <h2 class="font-bold text-base text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
+            <i data-lucide="lock" class="w-5 h-5 text-rose-500"></i>
+            Security Settings
+          </h2>
+
+          <!-- User Password (Open Password) -->
+          <div class="space-y-2">
+            <label for="lockerUserPassword" class="block text-sm font-semibold text-slate-700">Password to Open PDF</label>
+            <div class="relative">
+              <input type="password" id="lockerUserPassword" placeholder="Enter open password" class="w-full px-3.5 py-3 pr-10 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 font-medium">
+              <button id="toggleUserPasswordBtn" type="button" class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+                <i data-lucide="eye" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Owner Password -->
+          <div class="space-y-2">
+            <label for="lockerOwnerPassword" class="block text-sm font-semibold text-slate-700">Owner/Admin Password (Optional)</label>
+            <input type="password" id="lockerOwnerPassword" placeholder="For permission changes" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 font-medium">
+          </div>
+
+          <!-- Permissions Options -->
+          <div class="space-y-3 pt-2">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">User Permissions</label>
+            <div class="space-y-2.5">
+              <label class="flex items-center gap-2.5 text-sm font-medium text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" id="permPrint" checked class="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500">
+                <span>Allow Printing</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-sm font-medium text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" id="permCopy" checked class="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500">
+                <span>Allow Content Copying</span>
+              </label>
+              <label class="flex items-center gap-2.5 text-sm font-medium text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" id="permModify" checked class="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500">
+                <span>Allow Modification</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Output Filename -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <label for="lockerFileName" class="block text-sm font-semibold text-slate-700">Output PDF Filename</label>
+            <input type="text" id="lockerFileName" value="locked_document" placeholder="Enter file name" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 font-medium">
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-tr from-rose-50/70 to-pink-50/70 p-5 rounded-2xl border border-rose-50">
+          <h3 class="font-bold text-xs sm:text-sm text-rose-900 flex items-center gap-2 mb-2">
+            <i data-lucide="shield-check" class="w-4 h-4"></i> Secure Local Encryption
+          </h3>
+          <p class="text-xs text-rose-950/70 leading-relaxed font-medium">
+            We compile your protected PDF directly inside your web browser. No plain text data or passwords ever leave your device.
+          </p>
+        </div>
+      </section>
+
+      <!-- Main Workspace Panel -->
+      <section class="lg:col-span-8 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+            <h3 class="font-bold text-base text-slate-900">Document to Protect</h3>
+            <span id="lockerFileCounter" class="hidden text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg"></span>
+          </div>
+
+          <div class="p-4 sm:p-6">
+            <div id="lockerDropZone" class="border-2 border-dashed border-slate-200 hover:border-rose-400 bg-slate-50/50 rounded-xl sm:rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition relative group">
+              <input type="file" id="lockerFileInput" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 shadow-sm group-hover:scale-105 transition-transform duration-300 mb-3.5">
+                <i data-lucide="lock" class="w-5 h-5 text-slate-500 group-hover:text-rose-600 transition"></i>
+              </div>
+              <button class="bg-white border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 hover:border-slate-300 transition inline-flex items-center gap-2 mb-3">
+                <i data-lucide="upload" class="w-4 h-4 text-slate-500"></i>
+                Load PDF Document
+              </button>
+              <p class="text-sm font-medium text-slate-600 mb-1">Choose a PDF or drag & drop it here.</p>
+              <p class="text-[11px] text-slate-400 font-medium">Standard PDF documents supported.</p>
+            </div>
+
+            <!-- Locker Preview Workspace -->
+            <div id="lockerWorkspace" class="hidden mt-6 space-y-6">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">PDF Preview</h4>
+                  <p class="text-[10px] text-slate-500 font-medium mt-0.5">Ready to encrypt document</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <button id="generateLockedPdfBtn" class="flex-1 sm:flex-initial justify-center text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-xl transition flex items-center gap-1.5 shadow-sm shadow-rose-100">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i> Lock & Download Protected PDF
+                  </button>
+                  <button id="lockerClearAllBtn" class="text-xs font-bold bg-slate-200 text-slate-600 px-4 py-3 rounded-xl hover:bg-slate-300 transition flex items-center gap-1.5">
+                    <i data-lucide="trash" class="w-4 h-4"></i> Clear
+                  </button>
+                </div>
+              </div>
+
+              <!-- Page view render container -->
+              <div id="lockerPagesContainer" class="space-y-8 flex flex-col items-center bg-slate-100 rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[600px]">
+                <!-- Rendered pages list will display here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ================= WORKSPACE: PDF SIGNER ================= -->
+  <main id="pdfSignerView" class="view-panel hidden flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <button class="backToHomeBtn px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Helper Directory
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-indigo-600 animate-pulse"></span>
+        <span class="text-xs text-slate-500 font-semibold">Tool: PDF Signature Workspace</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      
+      <!-- Creator Pad Options Column (Left) -->
+      <section class="lg:col-span-4 space-y-4 sm:space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-5">
+          <h2 class="font-bold text-base text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-100">
+            <i data-lucide="signature" class="w-5 h-5 text-indigo-500"></i>
+            Draw Signature
+          </h2>
+
+          <!-- Color palette selectors -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Ink Color</label>
+            <div class="flex gap-2">
+              <button class="ink-color-btn w-8 h-8 rounded-full bg-slate-950 border-2 border-indigo-500 transition active:scale-90 flex items-center justify-center text-white" data-color="#020617">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              </button>
+              <button class="ink-color-btn w-8 h-8 rounded-full bg-blue-600 transition active:scale-90 flex items-center justify-center text-white" data-color="#2563eb">
+                <i data-lucide="check" class="w-3.5 h-3.5 hidden"></i>
+              </button>
+              <button class="ink-color-btn w-8 h-8 rounded-full bg-red-600 transition active:scale-90 flex items-center justify-center text-white" data-color="#dc2626">
+                <i data-lucide="check" class="w-3.5 h-3.5 hidden"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Drawing Pad Canvas -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Pad Canvas</label>
+              <button id="clearSigPadBtn" class="text-xs text-indigo-600 font-bold hover:underline transition">Clear Pad</button>
+            </div>
+            <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50 relative">
+              <canvas id="signaturePad" class="w-full h-40 cursor-crosshair block" style="touch-action: none;"></canvas>
+            </div>
+            <p class="text-[10px] text-slate-400">Draw with your finger on touch devices, or use your mouse drag.</p>
+          </div>
+
+          <!-- Custom PDF signed Title -->
+          <div class="space-y-2">
+            <label for="signedFileName" class="block text-sm font-semibold text-slate-700">Signed PDF Output Title</label>
+            <input type="text" id="signedFileName" value="signed_document" class="w-full px-3.5 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+          </div>
+
+          <!-- Signature Placing controller -->
+          <div id="placingControls" class="hidden space-y-4 pt-4 border-t border-slate-100">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Signature Placement Settings
+            </h3>
+            
+            <div class="space-y-2">
+              <div class="flex justify-between text-xs font-semibold text-slate-600">
+                <span>Display Scale</span>
+                <span id="sigScaleVal">100%</span>
+              </div>
+              <input type="range" id="sigScaleSlider" min="20" max="250" value="100" class="w-full h-2 bg-slate-100 rounded-lg cursor-pointer">
+            </div>
+
+            <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl">
+              <p class="text-[11px] text-indigo-950/80 leading-relaxed font-medium">
+                <strong class="font-bold">Instructions:</strong> Draw your signature above, then tap/click on any rendered page view on the right to position your signed stamp! You can click again to reposition.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-tr from-indigo-50/70 to-purple-50/70 p-5 rounded-2xl border border-indigo-50">
+          <h3 class="font-bold text-xs sm:text-sm text-indigo-900 flex items-center gap-2 mb-2">
+            <i data-lucide="shield" class="w-4 h-4"></i> Sandbox Vault Safety
+          </h3>
+          <p class="text-xs text-indigo-950/70 leading-relaxed font-medium">
+            Your PDF sheets are parsed and signature tracks are rendered entirely within your local browser sandbox. Safe for sensitive, NDA-controlled legal agreements.
+          </p>
+        </div>
+      </section>
+
+      <!-- Workspace Page Viewers (Right) -->
+      <section class="lg:col-span-8 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
+            <h3 class="font-bold text-base text-slate-900">Document Workspace</h3>
+            <span id="signerFileCounter" class="hidden text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg"></span>
+          </div>
+
+          <div class="p-4 sm:p-6">
+            <div id="signerDropZone" class="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-slate-50/50 rounded-xl sm:rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer transition relative group">
+              <input type="file" id="signerFileInput" accept="application/pdf" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+              <div class="w-11 h-11 sm:w-12 sm:h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 shadow-sm group-hover:scale-105 transition-transform duration-300 mb-3.5">
+                <i data-lucide="file-lock" class="w-5 h-5 text-slate-500 group-hover:text-indigo-600 transition"></i>
+              </div>
+              <button class="bg-white border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 hover:border-slate-300 transition inline-flex items-center gap-2 mb-3">
+                <i data-lucide="upload" class="w-4 h-4 text-slate-500"></i>
+                Load PDF Document
+              </button>
+              <p class="text-sm font-medium text-slate-600 mb-1">Upload the PDF document you wish to sign.</p>
+              <p class="text-[11px] text-slate-400 font-medium">Standard PDF format. Signed locally.</p>
+            </div>
+
+            <!-- Interactive Workspace Grid with Rendered PDF pages -->
+            <div id="signerWorkspace" class="hidden mt-6 space-y-6">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">PDF Preview Viewport</h4>
+                  <p class="text-[10px] text-slate-500 font-medium mt-0.5">Click directly on any page to anchor your signature</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <button id="generateSignedPdfBtn" class="flex-1 sm:flex-initial justify-center text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-xl transition flex items-center gap-1.5 shadow-sm shadow-indigo-100">
+                    <i data-lucide="check-square" class="w-4 h-4"></i> Compile & Download Signed PDF
+                  </button>
+                  <button id="signerClearAllBtn" class="text-xs font-bold bg-slate-200 text-slate-600 px-4 py-3 rounded-xl hover:bg-slate-300 transition flex items-center gap-1.5">
+                    <i data-lucide="trash" class="w-4 h-4"></i> Clear
+                  </button>
+                </div>
+              </div>
+
+              <!-- Container holding each rendered page canvas overlay layout dynamically -->
+              <div id="signerPagesContainer" class="space-y-8 flex flex-col items-center bg-slate-100 rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[640px]">
+                <!-- Filled dynamically with page wrappers -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= APP LOGIC SYSTEM ================= -->
+  <script>
+    // Global Loading Overlay Controller
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+
+    function showLoader(message, delay = 0) {
+      loadingText.textContent = message;
+      loadingOverlay.classList.remove('hidden');
+      loadingOverlay.classList.add('flex');
+      
+      if (delay > 0) {
+        return new Promise(resolve => {
+          setTimeout(() => {
+            hideLoader();
+            resolve();
+          }, delay);
+        });
+      }
+    }
+
+    function hideLoader() {
+      loadingOverlay.classList.add('hidden');
+      loadingOverlay.classList.remove('flex');
+    }
+
+    // Custom non-intrusive alert system
+    function showCustomAlert(message) {
+      document.getElementById('customAlertText').textContent = message;
+      const modal = document.getElementById('customAlertModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    document.getElementById('closeAlertBtn').addEventListener('click', () => {
+      const modal = document.getElementById('customAlertModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    });
+
+    // Navigation Routing System
+    const portalView = document.getElementById('portalView');
+    const compressorView = document.getElementById('compressorView');
+    const pdfView = document.getElementById('pdfView');
+    const pdfSignerView = document.getElementById('pdfSignerView');
+    const lockerView = document.getElementById('lockerView');
+    
+    const logoHomeBtn = document.getElementById('logoHomeBtn');
+    const navHomeBtn = document.getElementById('navHomeBtn');
+    const mobileNavHomeBtn = document.getElementById('mobileNavHomeBtn');
+    
+    const openCompressorCard = document.getElementById('openCompressorCard');
+    const openPdfCard = document.getElementById('openPdfCard');
+    const openLockerCard = document.getElementById('openLockerCard');
+    const openSignerCard = document.getElementById('openSignerCard');
+    const backToHomeBtns = document.querySelectorAll('.backToHomeBtn');
+
+    // Mobile Hamburger Elements
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const menuIcon = document.getElementById('menuIcon');
+
+    function toggleMobileMenu() {
+      const isHidden = mobileMenu.classList.contains('hidden');
+      if (isHidden) {
+        openMobileMenu();
+      } else {
+        closeMobileMenu();
+      }
+    }
+
+    function openMobileMenu() {
+      mobileMenu.classList.remove('hidden');
+      menuIcon.setAttribute('data-lucide', 'x');
+      lucide.createIcons();
+    }
+
+    function closeMobileMenu() {
+      mobileMenu.classList.add('hidden');
+      menuIcon.setAttribute('data-lucide', 'menu');
+      lucide.createIcons();
+    }
+
+    mobileMenuToggle.addEventListener('click', toggleMobileMenu);
+
+    async function routeTo(viewName) {
+      closeMobileMenu();
+
+      // Show Loader transition
+      let label = "Redirecting...";
+      if (viewName === 'compressor') label = "Opening Image Compressor...";
+      if (viewName === 'pdf') label = "Opening JPG to PDF Converter...";
+      if (viewName === 'signer') label = "Opening PDF Signature Workspace...";
+      if (viewName === 'locker') label = "Opening PDF Locker Secure...";
+      if (viewName === 'portal') label = "Returning to Directory...";
+
+      await showLoader(label, 800);
+
+      portalView.classList.add('hidden');
+      compressorView.classList.add('hidden');
+      pdfView.classList.add('hidden');
+      pdfSignerView.classList.add('hidden');
+      lockerView.classList.add('hidden');
+
+      if (viewName === 'portal') {
+        portalView.classList.remove('hidden');
+      } else if (viewName === 'compressor') {
+        compressorView.classList.remove('hidden');
+      } else if (viewName === 'pdf') {
+        pdfView.classList.remove('hidden');
+      } else if (viewName === 'signer') {
+        pdfSignerView.classList.remove('hidden');
+        resizeSigPad();
+      } else if (viewName === 'locker') {
+        lockerView.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    // Nav Bindings
+    logoHomeBtn.addEventListener('click', () => routeTo('portal'));
+    navHomeBtn.addEventListener('click', () => routeTo('portal'));
+    mobileNavHomeBtn.addEventListener('click', () => routeTo('portal'));
+    openCompressorCard.addEventListener('click', () => routeTo('compressor'));
+    openPdfCard.addEventListener('click', () => routeTo('pdf'));
+    openLockerCard.addEventListener('click', () => routeTo('locker'));
+    openSignerCard.addEventListener('click', () => routeTo('signer'));
+    backToHomeBtns.forEach(btn => btn.addEventListener('click', () => routeTo('portal')));
+
+    // ==========================================
+    // MODULE 1: IMAGE COMPRESSOR CORE ENGINE
+    // ==========================================
+    const uploadedImagesList = [];
+    let activeCompareId = null;
+
+    // DOM Selectors (Compressor)
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const fileCounter = document.getElementById('fileCounter');
+    const previewGridContainer = document.getElementById('previewGridContainer');
+    const thumbnailsGrid = document.getElementById('thumbnailsGrid');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+    const qualitySlider = document.getElementById('qualitySlider');
+    const qualityVal = document.getElementById('qualityVal');
+    const formatSelect = document.getElementById('formatSelect');
+    const resizeSlider = document.getElementById('resizeSlider');
+    const resizeVal = document.getElementById('resizeVal');
+    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+    const settingsAccordionHeader = document.getElementById('settingsAccordionHeader');
+    const settingsAccordionContent = document.getElementById('settingsAccordionContent');
+    const accordionArrow = document.getElementById('accordionArrow');
+
+    const comparisonPanel = document.getElementById('comparisonPanel');
+    const originalCompareImg = document.getElementById('originalCompareImg');
+    const compressedCompareWrapper = document.getElementById('compressedCompareWrapper');
+    const compressedCompareImg = document.getElementById('compressedCompareImg');
+    const sliderBar = document.getElementById('sliderBar');
+    const compareSelector = document.getElementById('compareSelector');
+
+    const originalDashboardSize = document.getElementById('originalDashboardSize');
+    const compressedDashboardSize = document.getElementById('compressedDashboardSize');
+    const savingsDashboardPercentage = document.getElementById('savingsDashboardPercentage');
+
+    // Accordion Control
+    settingsAccordionHeader.addEventListener('click', () => {
+      if (window.innerWidth >= 1024) return;
+      const isHidden = settingsAccordionContent.classList.contains('hidden');
+      if (isHidden) {
+        settingsAccordionContent.classList.remove('hidden');
+        accordionArrow.style.transform = 'rotate(180deg)';
+      } else {
+        settingsAccordionContent.classList.add('hidden');
+        accordionArrow.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 1024) {
+        settingsAccordionContent.classList.remove('hidden');
+        accordionArrow.style.transform = 'rotate(0deg)';
+      } else if (!settingsAccordionContent.classList.contains('hidden')) {
+        settingsAccordionContent.classList.add('hidden');
+      }
+    });
+
+    resetSettingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      qualitySlider.value = 80;
+      formatSelect.value = 'original';
+      resizeSlider.value = 100;
+      updateSettingsDisplay();
+      recompressAll();
+    });
+
+    qualitySlider.addEventListener('input', () => {
+      qualityVal.textContent = `${qualitySlider.value}%`;
+    });
+    qualitySlider.addEventListener('change', () => {
+      recompressAll();
+    });
+    formatSelect.addEventListener('change', () => {
+      recompressAll();
+    });
+    resizeSlider.addEventListener('input', () => {
+      resizeVal.textContent = `${resizeSlider.value}%`;
+    });
+    resizeSlider.addEventListener('change', () => {
+      recompressAll();
+    });
+
+    function updateSettingsDisplay() {
+      qualityVal.textContent = `${qualitySlider.value}%`;
+      resizeVal.textContent = `${resizeSlider.value}%`;
+    }
+
+    // Drag / Drop Handling
+    ['dragenter', 'dragover'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-50/40');
+      });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/40');
+      });
+    });
+    dropZone.addEventListener('drop', (e) => {
+      handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    async function handleFiles(files) {
+      if (!files.length) return;
+      showLoader("Analyzing Uploaded Images...");
+      
+      // Delay briefly so layout engine registers processing
+      await new Promise(r => setTimeout(r, 400));
+
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const originalDataUrl = await readFileAsDataURL(file);
+        uploadedImagesList.push({
+          id,
+          originalFile: file,
+          originalDataUrl,
+          name: file.name,
+          originalSize: file.size,
+          originalDimensions: await getImageDimensions(originalDataUrl)
+        });
+      }
+      await recompressAll();
+      if (uploadedImagesList.length > 0 && !activeCompareId) {
+        setActiveComparison(uploadedImagesList[0].id);
+      }
+      hideLoader();
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getImageDimensions(dataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.width, height: img.height });
+        img.src = dataUrl;
+      });
+    }
+
+    async function recompressAll() {
+      if (uploadedImagesList.length === 0) {
+        updateUIState();
+        return;
+      }
+      const quality = parseInt(qualitySlider.value);
+      const scale = parseInt(resizeSlider.value) / 100;
+      const format = formatSelect.value;
+
+      for (let item of uploadedImagesList) {
+        const compressedObj = await compressEngine(item.originalDataUrl, item.originalFile.type, quality, scale, format);
+        item.compressedDataUrl = compressedObj.dataUrl;
+        item.compressedSize = compressedObj.size;
+        item.compressedDimensions = { width: compressedObj.width, height: compressedObj.height };
+        item.format = compressedObj.mimeType.split('/')[1];
+      }
+      updateUIState();
+      if (activeCompareId) {
+        refreshComparisonDisplay();
+      }
+    }
+
+    function compressEngine(originalDataUrl, originalMime, quality, scale, format) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width * scale;
+          let height = img.height * scale;
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let targetMime = originalMime;
+          if (format !== 'original') {
+            targetMime = `image/${format}`;
+          }
+          const targetQuality = quality / 100;
+          const dataUrl = canvas.toDataURL(targetMime, targetQuality);
+
+          const padding = (dataUrl.endsWith('==') ? 2 : (dataUrl.endsWith('=') ? 1 : 0));
+          const size = Math.round((dataUrl.length * (3/4)) - padding) - (dataUrl.split(',')[0].length + 1);
+
+          resolve({ dataUrl, size, width, height, mimeType: targetMime });
+        };
+        img.src = originalDataUrl;
+      });
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function updateUIState() {
+      const count = uploadedImagesList.length;
+      if (count > 0) {
+        fileCounter.textContent = `${count} ${count === 1 ? 'image' : 'images'}`;
+        fileCounter.classList.remove('hidden');
+        previewGridContainer.classList.remove('hidden');
+
+        thumbnailsGrid.innerHTML = '';
+        uploadedImagesList.forEach(item => {
+          const savings = Math.round(((item.originalSize - item.compressedSize) / item.originalSize) * 100);
+          const isSelected = activeCompareId === item.id;
+          const card = document.createElement('div');
+          card.className = `group bg-slate-50 border-2 ${isSelected ? 'border-indigo-500 bg-indigo-50/20' : 'border-slate-100'} hover:border-indigo-400 p-2 sm:p-2.5 rounded-2xl relative transition flex flex-col justify-between h-44 sm:h-48 select-none cursor-pointer shadow-sm`;
+          card.setAttribute('data-id', item.id);
+          card.innerHTML = `
+            <div class="relative w-full h-24 sm:h-28 rounded-lg overflow-hidden bg-slate-200">
+              <img src="${item.compressedDataUrl}" class="w-full h-full object-cover" alt="${item.name}">
+              <button class="delete-btn absolute top-1.5 right-1.5 w-7 h-7 rounded-md bg-rose-500 text-white flex items-center justify-center shadow hover:bg-rose-600 transition" data-id="${item.id}">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+              <span class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-extrabold ${savings > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}">
+                ${savings > 0 ? `-${savings}%` : '0%'}
+              </span>
+            </div>
+            <div class="mt-1.5 text-[10px] sm:text-[11px] leading-tight flex-grow flex flex-col justify-end">
+              <p class="font-bold text-slate-800 truncate w-full" title="${item.name}">${item.name}</p>
+              <div class="flex justify-between items-center text-slate-400 mt-1">
+                <span>Org: <strong class="text-slate-600 font-medium">${formatBytes(item.originalSize)}</strong></span>
+                <span>Opt: <strong class="text-indigo-600 font-semibold">${formatBytes(item.compressedSize)}</strong></span>
+              </div>
+            </div>
+            <div class="absolute inset-x-2 bottom-2 bg-indigo-600 rounded-xl opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200 py-1.5 text-center text-xs text-white font-bold pointer-events-auto flex items-center justify-center gap-1.5 cursor-pointer download-single-btn" data-id="${item.id}">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Download
+            </div>
+          `;
+
+          card.addEventListener('click', (e) => {
+            if (e.target.closest('.delete-btn') || e.target.closest('.download-single-btn')) return;
+            setActiveComparison(item.id);
+          });
+          card.querySelector('.download-single-btn').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await showLoader("Downloading File...", 1000);
+            downloadSingle(item);
+          });
+          card.querySelector('.delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteImage(item.id);
+          });
+          thumbnailsGrid.appendChild(card);
+        });
+
+        lucide.createIcons();
+
+        const savedValue = compareSelector.value;
+        compareSelector.innerHTML = '';
+        uploadedImagesList.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          opt.textContent = item.name;
+          compareSelector.appendChild(opt);
+        });
+        if (uploadedImagesList.some(item => item.id === savedValue)) {
+          compareSelector.value = savedValue;
+        }
+      } else {
+        fileCounter.classList.add('hidden');
+        previewGridContainer.classList.add('hidden');
+        comparisonPanel.classList.add('hidden');
+        activeCompareId = null;
+      }
+    }
+
+    function setActiveComparison(id) {
+      activeCompareId = id;
+      comparisonPanel.classList.remove('hidden');
+      compareSelector.value = id;
+      document.querySelectorAll('[data-id]').forEach(card => {
+        if (card.getAttribute('data-id') === id) {
+          card.classList.add('border-indigo-500', 'bg-indigo-50/20');
+        } else {
+          card.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+        }
+      });
+      refreshComparisonDisplay();
+    }
+
+    function refreshComparisonDisplay() {
+      const item = uploadedImagesList.find(img => img.id === activeCompareId);
+      if (!item) return;
+
+      originalCompareImg.src = item.originalDataUrl;
+      compressedCompareImg.src = item.compressedDataUrl;
+
+      originalDashboardSize.textContent = formatBytes(item.originalSize);
+      compressedDashboardSize.textContent = formatBytes(item.compressedSize);
+      const savings = Math.round(((item.originalSize - item.compressedSize) / item.originalSize) * 100);
+      savingsDashboardPercentage.textContent = savings > 0 ? `${savings}% Saved` : '0% Saved';
+
+      // Adjust wrapper sizes
+      originalCompareImg.onload = () => {
+        adjustSlideHandlePosition(parseFloat(sliderBar.style.left) || 50);
+      };
+    }
+
+    // Comparison Drag Handling
+    let isDraggingSlider = false;
+    sliderBar.addEventListener('mousedown', () => isDraggingSlider = true);
+    window.addEventListener('mouseup', () => isDraggingSlider = false);
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingSlider) return;
+      const rect = originalCompareImg.parentElement.getBoundingClientRect();
+      let pos = ((e.clientX - rect.left) / rect.width) * 100;
+      if (pos < 0) pos = 0;
+      if (pos > 100) pos = 100;
+      adjustSlideHandlePosition(pos);
+    });
+
+    sliderBar.addEventListener('touchstart', () => isDraggingSlider = true, {passive: true});
+    window.addEventListener('touchend', () => isDraggingSlider = false, {passive: true});
+    window.addEventListener('touchmove', (e) => {
+      if (!isDraggingSlider) return;
+      const rect = originalCompareImg.parentElement.getBoundingClientRect();
+      const clientX = e.touches[0].clientX;
+      let pos = ((clientX - rect.left) / rect.width) * 100;
+      if (pos < 0) pos = 0;
+      if (pos > 100) pos = 100;
+      adjustSlideHandlePosition(pos);
+    }, {passive: true});
+
+    function adjustSlideHandlePosition(percent) {
+      sliderBar.style.left = `${percent}%`;
+      compressedCompareWrapper.style.left = `${percent}%`;
+      compressedCompareImg.style.width = `${originalCompareImg.parentElement.clientWidth}px`;
+      compressedCompareImg.style.left = `-${compressedCompareWrapper.offsetLeft}px`;
+    }
+
+    compareSelector.addEventListener('change', () => {
+      setActiveComparison(compareSelector.value);
+    });
+
+    function downloadSingle(item) {
+      const link = document.createElement('a');
+      const ext = item.format;
+      link.download = item.name.substring(0, item.name.lastIndexOf('.')) + `_optimized.${ext}`;
+      link.href = item.compressedDataUrl;
+      link.click();
+    }
+
+    function deleteImage(id) {
+      const idx = uploadedImagesList.findIndex(img => img.id === id);
+      if (idx > -1) {
+        uploadedImagesList.splice(idx, 1);
+        if (activeCompareId === id) {
+          activeCompareId = uploadedImagesList.length > 0 ? uploadedImagesList[0].id : null;
+        }
+        recompressAll();
+      }
+    }
+
+    clearAllBtn.addEventListener('click', () => {
+      uploadedImagesList.length = 0;
+      activeCompareId = null;
+      recompressAll();
+    });
+
+    downloadAllBtn.addEventListener('click', async () => {
+      await showLoader("Downloading All Assets...", 1500);
+      uploadedImagesList.forEach(item => downloadSingle(item));
+    });
+
+
+    // ==========================================
+    // MODULE 2: JPG TO PDF COMPILER CORE ENGINE
+    // ==========================================
+    const pdfSourceImages = []; // Array of objects { id, file, dataUrl, name, size, width, height }
+
+    // DOM Selectors (PDF)
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfDropZone = document.getElementById('pdfDropZone');
+    const pdfFileCounter = document.getElementById('pdfFileCounter');
+    const pdfPreviewGridContainer = document.getElementById('pdfPreviewGridContainer');
+    const pdfThumbnailsContainer = document.getElementById('pdfThumbnailsContainer');
+    const pdfClearAllBtn = document.getElementById('pdfClearAllBtn');
+    const generatePdfBtn = document.getElementById('generatePdfBtn');
+
+    // PDF Config Option Selectors
+    const pdfPageSize = document.getElementById('pageSize');
+    const pdfOrientation = document.getElementById('pdfOrientation');
+    const pdfMargin = document.getElementById('pdfMargin');
+    const pdfFileName = document.getElementById('pdfFileName');
+
+    // Drag / Drop for PDF section
+    ['dragenter', 'dragover'].forEach(name => {
+      pdfDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        pdfDropZone.classList.add('border-emerald-500', 'bg-emerald-50/40');
+      });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      pdfDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        pdfDropZone.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+      });
+    });
+    pdfDropZone.addEventListener('drop', (e) => {
+      handlePdfImages(e.dataTransfer.files);
+    });
+    pdfFileInput.addEventListener('change', (e) => {
+      handlePdfImages(e.target.files);
+    });
+
+    async function handlePdfImages(files) {
+      if (!files.length) return;
+      showLoader("Loading PDF Assets...");
+      await new Promise(r => setTimeout(r, 400));
+
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const id = 'pdf_img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const dataUrl = await readFileAsDataURL(file);
+        const dims = await getImageDimensions(dataUrl);
+        pdfSourceImages.push({
+          id,
+          file,
+          dataUrl,
+          name: file.name,
+          size: file.size,
+          width: dims.width,
+          height: dims.height
+        });
+      }
+      updatePdfUI();
+      hideLoader();
+    }
+
+    // PDF UI Sync Updates
+    function updatePdfUI() {
+      const count = pdfSourceImages.length;
+      if (count > 0) {
+        pdfFileCounter.textContent = `${count} ${count === 1 ? 'image' : 'images'} queued`;
+        pdfFileCounter.classList.remove('hidden');
+        pdfPreviewGridContainer.classList.remove('hidden');
+
+        pdfThumbnailsContainer.innerHTML = '';
+        pdfSourceImages.forEach((img, idx) => {
+          const itemRow = document.createElement('div');
+          itemRow.className = "flex items-center gap-4 bg-slate-50 hover:bg-slate-100 p-3 rounded-xl border border-slate-100 transition";
+          itemRow.innerHTML = `
+            <span class="text-xs font-bold text-slate-400 w-6 text-center">#${idx + 1}</span>
+            <div class="w-16 h-16 rounded-lg overflow-hidden bg-slate-200 border border-slate-200 flex-shrink-0">
+              <img src="${img.dataUrl}" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-grow min-w-0">
+              <p class="text-sm font-bold text-slate-800 truncate" title="${img.name}">${img.name}</p>
+              <p class="text-xs text-slate-400 mt-0.5">${formatBytes(img.size)} • ${img.width}x${img.height} px</p>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="pdf-up-btn w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-emerald-600 flex items-center justify-center transition" data-id="${img.id}">
+                <i data-lucide="arrow-up" class="w-4 h-4"></i>
+              </button>
+              <button class="pdf-down-btn w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-emerald-600 flex items-center justify-center transition" data-id="${img.id}">
+                <i data-lucide="arrow-down" class="w-4 h-4"></i>
+              </button>
+              <button class="pdf-del-btn w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 flex items-center justify-center transition" data-id="${img.id}">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+
+          // Sort Up
+          itemRow.querySelector('.pdf-up-btn').addEventListener('click', () => {
+            if (idx > 0) {
+              const temp = pdfSourceImages[idx];
+              pdfSourceImages[idx] = pdfSourceImages[idx - 1];
+              pdfSourceImages[idx - 1] = temp;
+              updatePdfUI();
+            }
+          });
+
+          // Sort Down
+          itemRow.querySelector('.pdf-down-btn').addEventListener('click', () => {
+            if (idx < pdfSourceImages.length - 1) {
+              const temp = pdfSourceImages[idx];
+              pdfSourceImages[idx] = pdfSourceImages[idx + 1];
+              pdfSourceImages[idx + 1] = temp;
+              updatePdfUI();
+            }
+          });
+
+          // Delete Single item
+          itemRow.querySelector('.pdf-del-btn').addEventListener('click', () => {
+            pdfSourceImages.splice(idx, 1);
+            updatePdfUI();
+          });
+
+          pdfThumbnailsContainer.appendChild(itemRow);
+        });
+
+        lucide.createIcons();
+      } else {
+        pdfFileCounter.classList.add('hidden');
+        pdfPreviewGridContainer.classList.add('hidden');
+      }
+    }
+
+    pdfClearAllBtn.addEventListener('click', () => {
+      pdfSourceImages.length = 0;
+      updatePdfUI();
+    });
+
+    // jsPDF Core Compiler Engine with Loading Screen
+    generatePdfBtn.addEventListener('click', async () => {
+      if (pdfSourceImages.length === 0) return;
+
+      // Show the customized loader during PDF compilation
+      await showLoader("Compiling & Generating PDF Document...", 1800);
+
+      const { jsPDF } = window.jspdf;
+      const docPageSize = pdfPageSize.value; // 'a4', 'letter', 'fit'
+      const docOrientation = pdfOrientation.value; // 'portrait', 'landscape', 'auto'
+      const marginType = pdfMargin.value; // 'none', 'thin', 'normal'
+      const finalFileName = pdfFileName.value.trim() || 'converted_document';
+
+      // Setting standard measurements
+      let margin = 0;
+      if (marginType === 'thin') margin = 15;
+      if (marginType === 'normal') margin = 30;
+
+      let doc;
+
+      for (let i = 0; i < pdfSourceImages.length; i++) {
+        const imgItem = pdfSourceImages[i];
+        let imgWidth = imgItem.width;
+        let imgHeight = imgItem.height;
+
+        let orientation = 'p';
+        if (docOrientation === 'auto') {
+          orientation = imgWidth > imgHeight ? 'l' : 'p';
+        } else {
+          orientation = docOrientation === 'portrait' ? 'p' : 'l';
+        }
+
+        let format = 'a4';
+        let pdfWidth = 595.28; // A4 pt dimensions
+        let pdfHeight = 841.89;
+
+        if (docPageSize === 'letter') {
+          format = 'letter';
+          pdfWidth = 612;
+          pdfHeight = 792;
+        } else if (docPageSize === 'fit') {
+          format = [imgWidth, imgHeight];
+          pdfWidth = imgWidth;
+          pdfHeight = imgHeight;
+        }
+
+        // Adjust dimensions if Landscape orientation selected
+        if (docPageSize !== 'fit') {
+          if (orientation === 'l') {
+            const temp = pdfWidth;
+            pdfWidth = pdfHeight;
+            pdfHeight = temp;
+          }
+        }
+
+        // Initialize PDF object on first run, add pages on subsequent runs
+        if (i === 0) {
+          doc = new jsPDF({
+            orientation: orientation,
+            unit: 'pt',
+            format: format
+          });
+        } else {
+          doc.addPage(format, orientation);
+        }
+
+        // Calculate placement coordinates inside bounds
+        let renderWidth = pdfWidth - (margin * 2);
+        let renderHeight = pdfHeight - (margin * 2);
+
+        const imgRatio = imgWidth / imgHeight;
+        const pageRatio = renderWidth / renderHeight;
+
+        if (docPageSize !== 'fit') {
+          if (imgRatio > pageRatio) {
+            renderHeight = renderWidth / imgRatio;
+          } else {
+            renderWidth = renderHeight * imgRatio;
+          }
+        }
+
+        // Centering
+        const xPos = margin + ((pdfWidth - (margin * 2) - renderWidth) / 2);
+        const yPos = margin + ((pdfHeight - (margin * 2) - renderHeight) / 2);
+
+        // Add to compiled stream
+        doc.addImage(imgItem.dataUrl, 'JPEG', xPos, yPos, renderWidth, renderHeight);
+      }
+
+      doc.save(`${finalFileName}.pdf`);
+    });
+
+    // ==========================================
+    // MODULE 3: PDF LOCKER CORE ENGINE
+    // ==========================================
+    let lockerPdfDocument = null;
+    let lockerPdfBytes = null;
+
+    // DOM Selectors (Locker)
+    const lockerFileInput = document.getElementById('lockerFileInput');
+    const lockerDropZone = document.getElementById('lockerDropZone');
+    const lockerWorkspace = document.getElementById('lockerWorkspace');
+    const lockerPagesContainer = document.getElementById('lockerPagesContainer');
+    const lockerClearAllBtn = document.getElementById('lockerClearAllBtn');
+    const generateLockedPdfBtn = document.getElementById('generateLockedPdfBtn');
+    
+    const lockerUserPassword = document.getElementById('lockerUserPassword');
+    const lockerOwnerPassword = document.getElementById('lockerOwnerPassword');
+    const permPrint = document.getElementById('permPrint');
+    const permCopy = document.getElementById('permCopy');
+    const permModify = document.getElementById('permModify');
+    const lockerFileName = document.getElementById('lockerFileName');
+    const toggleUserPasswordBtn = document.getElementById('toggleUserPasswordBtn');
+
+    // Toggle Password Input Visibility
+    toggleUserPasswordBtn.addEventListener('click', () => {
+      const type = lockerUserPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+      lockerUserPassword.setAttribute('type', type);
+      const icon = toggleUserPasswordBtn.querySelector('[data-lucide]');
+      const currentIcon = icon.getAttribute('data-lucide');
+      icon.setAttribute('data-lucide', currentIcon === 'eye' ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    });
+
+    // Drag and Drop for Locker
+    ['dragenter', 'dragover'].forEach(name => {
+      lockerDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        lockerDropZone.classList.add('border-rose-500', 'bg-rose-50/40');
+      });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      lockerDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        lockerDropZone.classList.remove('border-rose-500', 'bg-rose-50/40');
+      });
+    });
+    lockerDropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        loadLockerPdf(e.dataTransfer.files[0]);
+      }
+    });
+    lockerFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        loadLockerPdf(e.target.files[0]);
+      }
+    });
+
+    async function loadLockerPdf(file) {
+      if (file.type !== 'application/pdf') {
+        showCustomAlert("Please select a standard PDF document.");
+        return;
+      }
+      showLoader("Rendering PDF document viewports...");
+      await new Promise(r => setTimeout(r, 400));
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        lockerPdfBytes = new Uint8Array(e.target.result);
+        
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        const loadingTask = pdfjsLib.getDocument({ data: lockerPdfBytes });
+        lockerPdfDocument = await loadingTask.promise;
+        
+        // Update Title layout
+        const cleanTitle = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        lockerFileName.value = cleanTitle + "_protected";
+
+        await renderLockerPages();
+        lockerDropZone.classList.add('hidden');
+        lockerWorkspace.classList.remove('hidden');
+        hideLoader();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function renderLockerPages() {
+      lockerPagesContainer.innerHTML = '';
+      const totalPages = lockerPdfDocument.numPages;
+
+      for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+        const page = await lockerPdfDocument.getPage(pageNum);
+        const scale = 1.2;
+        const viewport = page.getViewport({ scale: scale });
+
+        // Outer relative card wrapper
+        const pageWrapper = document.createElement('div');
+        pageWrapper.className = "relative bg-white shadow-md border border-slate-200 rounded-lg flex flex-col items-center p-3 select-none transition max-w-full";
+
+        const canvas = document.createElement('canvas');
+        canvas.id = `locker_page_canvas_${pageNum - 1}`;
+        canvas.className = "block max-w-full rounded h-auto";
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+        pageWrapper.appendChild(canvas);
+
+        // Add page label footer
+        const pageFooter = document.createElement('div');
+        pageFooter.className = "w-full text-center text-xs font-bold text-slate-400 mt-2";
+        pageFooter.textContent = `Page ${pageNum} of ${totalPages}`;
+        pageWrapper.appendChild(pageFooter);
+
+        lockerPagesContainer.appendChild(pageWrapper);
+      }
+    }
+
+    lockerClearAllBtn.addEventListener('click', () => {
+      lockerPdfDocument = null;
+      lockerPdfBytes = null;
+      lockerFileInput.value = "";
+      lockerUserPassword.value = "";
+      lockerOwnerPassword.value = "";
+      lockerWorkspace.classList.add('hidden');
+      lockerDropZone.classList.remove('hidden');
+    });
+
+    // Compile and Lock PDF with User Passwords & Restriction Vectors
+    generateLockedPdfBtn.addEventListener('click', async () => {
+      if (!lockerPdfDocument) return;
+      
+      const userPass = lockerUserPassword.value.trim();
+      if (!userPass) {
+        showCustomAlert("Please specify an open password to secure your document.");
+        return;
+      }
+
+      await showLoader("Encrypting and generating protected PDF...", 1800);
+
+      const { jsPDF } = window.jspdf;
+      
+      // Map checkmarks into standard PDF permissions
+      const userPermissions = [];
+      if (permPrint.checked) userPermissions.push('print');
+      if (permCopy.checked) userPermissions.push('copy');
+      if (permModify.checked) userPermissions.push('modify');
+
+      // Setup document encryption payload options for jsPDF
+      const encryptionOptions = {
+        encryption: {
+          userPassword: userPass,
+          ownerPassword: lockerOwnerPassword.value.trim() || userPass + "_admin",
+          userPermissions: userPermissions
+        }
+      };
+
+      let lockedDoc = null;
+      const totalPages = lockerPdfDocument.numPages;
+
+      for (let i = 0; i < totalPages; i++) {
+        const pageCanvas = document.getElementById(`locker_page_canvas_${i}`);
+        const frameUrl = pageCanvas.toDataURL('image/jpeg', 0.95);
+        const orientation = pageCanvas.width > pageCanvas.height ? 'l' : 'p';
+
+        if (i === 0) {
+          lockedDoc = new jsPDF({
+            ...encryptionOptions,
+            orientation: orientation,
+            unit: 'pt',
+            format: [pageCanvas.width, pageCanvas.height]
+          });
+        } else {
+          lockedDoc.addPage([pageCanvas.width, pageCanvas.height], orientation);
+        }
+        lockedDoc.addImage(frameUrl, 'JPEG', 0, 0, pageCanvas.width, pageCanvas.height);
+      }
+
+      const protectedName = lockerFileName.value.trim() || 'protected_document';
+      lockedDoc.save(`${protectedName}.pdf`);
+      hideLoader();
+    });
+
+
+    // ==========================================
+    // MODULE 4: PDF SIGNER CORE ENGINE
+    // ==========================================
+    const signatureCanvas = document.getElementById('signaturePad');
+    const signatureCtx = signatureCanvas.getContext('2d');
+    let isDrawingSignature = false;
+    let selectedInkColor = '#020617';
+
+    // State tracks loaded document data
+    let signerPdfDocument = null;
+    let signerPdfBytes = null;
+    let activeSignatureDataUrl = null;
+    let placementPageIdx = null;
+    let placementPctX = 50;
+    let placementPctY = 80;
+    let placementScale = 1.0;
+
+    // Drawing Pad Setup
+    function resizeSigPad() {
+      const rect = signatureCanvas.parentElement.getBoundingClientRect();
+      signatureCanvas.width = rect.width;
+      signatureCanvas.height = 160;
+      clearSignaturePad();
+    }
+
+    function clearSignaturePad() {
+      signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+      signatureCtx.fillStyle = "#f8fafc";
+      signatureCtx.fillRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+      activeSignatureDataUrl = null;
+      document.getElementById('placingControls').classList.add('hidden');
+      updateAllPageOverlays();
+    }
+
+    // Canvas drawing coordinates tracker
+    function getCanvasCoordinates(e) {
+      const rect = signatureCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    signatureCanvas.addEventListener('mousedown', (e) => {
+      isDrawingSignature = true;
+      const coords = getCanvasCoordinates(e);
+      signatureCtx.beginPath();
+      signatureCtx.moveTo(coords.x, coords.y);
+    });
+
+    signatureCanvas.addEventListener('mousemove', (e) => {
+      if (!isDrawingSignature) return;
+      const coords = getCanvasCoordinates(e);
+      signatureCtx.lineWidth = 2.5;
+      signatureCtx.lineCap = 'round';
+      signatureCtx.strokeStyle = selectedInkColor;
+      signatureCtx.lineTo(coords.x, coords.y);
+      signatureCtx.stroke();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDrawingSignature) {
+        isDrawingSignature = false;
+        saveActiveSignature();
+      }
+    });
+
+    // Mobile touch controls for Drawing pad
+    signatureCanvas.addEventListener('touchstart', (e) => {
+      isDrawingSignature = true;
+      const coords = getCanvasCoordinates(e);
+      signatureCtx.beginPath();
+      signatureCtx.moveTo(coords.x, coords.y);
+    }, { passive: true });
+
+    signatureCanvas.addEventListener('touchmove', (e) => {
+      if (!isDrawingSignature) return;
+      const coords = getCanvasCoordinates(e);
+      signatureCtx.lineWidth = 2.5;
+      signatureCtx.lineCap = 'round';
+      signatureCtx.strokeStyle = selectedInkColor;
+      signatureCtx.lineTo(coords.x, coords.y);
+      signatureCtx.stroke();
+    }, { passive: true });
+
+    signatureCanvas.addEventListener('touchend', () => {
+      if (isDrawingSignature) {
+        isDrawingSignature = false;
+        saveActiveSignature();
+      }
+    });
+
+    function saveActiveSignature() {
+      // Validate drawing contains coordinates data
+      activeSignatureDataUrl = signatureCanvas.toDataURL('image/png');
+      document.getElementById('placingControls').classList.remove('hidden');
+      updateAllPageOverlays();
+    }
+
+    // Color Swappers
+    document.querySelectorAll('.ink-color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.ink-color-btn').forEach(b => b.querySelector('i').classList.add('hidden'));
+        btn.querySelector('i').classList.remove('hidden');
+        selectedInkColor = btn.getAttribute('data-color');
+      });
+    });
+
+    document.getElementById('clearSigPadBtn').addEventListener('click', clearSignaturePad);
+
+    // Dynamic placement scale slider
+    const sigScaleSlider = document.getElementById('sigScaleSlider');
+    const sigScaleVal = document.getElementById('sigScaleVal');
+    sigScaleSlider.addEventListener('input', () => {
+      placementScale = parseInt(sigScaleSlider.value) / 100;
+      sigScaleVal.textContent = `${sigScaleSlider.value}%`;
+      updateAllPageOverlays();
+    });
+
+    // ==========================================
+    // PDF Signer Document Loading
+    // ==========================================
+    const signerFileInput = document.getElementById('signerFileInput');
+    const signerDropZone = document.getElementById('signerDropZone');
+    const signerWorkspace = document.getElementById('signerWorkspace');
+    const signerPagesContainer = document.getElementById('signerPagesContainer');
+    const signerClearAllBtn = document.getElementById('signerClearAllBtn');
+    const generateSignedPdfBtn = document.getElementById('generateSignedPdfBtn');
+
+    ['dragenter', 'dragover'].forEach(name => {
+      signerDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        signerDropZone.classList.add('border-indigo-500', 'bg-indigo-50/40');
+      });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      signerDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        signerDropZone.classList.remove('border-indigo-500', 'bg-indigo-50/40');
+      });
+    });
+    signerDropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        loadSignerPdf(e.dataTransfer.files[0]);
+      }
+    });
+    signerFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        loadSignerPdf(e.target.files[0]);
+      }
+    });
+
+    async function loadSignerPdf(file) {
+      if (file.type !== 'application/pdf') {
+        showCustomAlert("Please select a standard PDF document.");
+        return;
+      }
+      showLoader("Rendering PDF document viewports...");
+      await new Promise(r => setTimeout(r, 400));
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        signerPdfBytes = new Uint8Array(e.target.result);
+        
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        const loadingTask = pdfjsLib.getDocument({ data: signerPdfBytes });
+        signerPdfDocument = await loadingTask.promise;
+        
+        // Update Title layout
+        const cleanTitle = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        document.getElementById('signedFileName').value = cleanTitle + "_signed";
+
+        await renderSignerPages();
+        signerDropZone.classList.add('hidden');
+        signerWorkspace.classList.remove('hidden');
+        hideLoader();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function renderSignerPages() {
+      signerPagesContainer.innerHTML = '';
+      const totalPages = signerPdfDocument.numPages;
+
+      for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+        const page = await signerPdfDocument.getPage(pageNum);
+        const scale = 1.5; // High definition display scale
+        const viewport = page.getViewport({ scale: scale });
+
+        // Outer relative card wrapper
+        const pageWrapper = document.createElement('div');
+        pageWrapper.className = "relative bg-white shadow-md border border-slate-200 rounded-lg flex flex-col items-center p-3 select-none transition cursor-crosshair group max-w-full";
+        pageWrapper.setAttribute('data-page-index', pageNum - 1);
+
+        const canvas = document.createElement('canvas');
+        canvas.id = `signer_page_canvas_${pageNum - 1}`;
+        canvas.className = "block max-w-full rounded h-auto";
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+        // Overlay element div used to anchor visual stamp previews
+        const overlayDiv = document.createElement('div');
+        overlayDiv.className = "absolute inset-3 pointer-events-none"; // aligns directly with canvas sizing boundaries
+        overlayDiv.id = `signer_page_overlay_${pageNum - 1}`;
+
+        pageWrapper.appendChild(canvas);
+        pageWrapper.appendChild(overlayDiv);
+
+        // Click on page handler registers coordinates
+        pageWrapper.addEventListener('click', (e) => {
+          if (!activeSignatureDataUrl) {
+            showCustomAlert("Please draw your signature on the touchpad pad first.");
+            return;
+          }
+          const canvasRect = canvas.getBoundingClientRect();
+          const clickX = e.clientX - canvasRect.left;
+          const clickY = e.clientY - canvasRect.top;
+
+          placementPageIdx = pageNum - 1;
+          placementPctX = (clickX / canvasRect.width) * 100;
+          placementPctY = (clickY / canvasRect.height) * 100;
+
+          updateAllPageOverlays();
+        });
+
+        // Add page label footer
+        const pageFooter = document.createElement('div');
+        pageFooter.className = "w-full text-center text-xs font-bold text-slate-400 mt-2";
+        pageFooter.textContent = `Page ${pageNum} of ${totalPages}`;
+        pageWrapper.appendChild(pageFooter);
+
+        signerPagesContainer.appendChild(pageWrapper);
+      }
+    }
+
+    function updateAllPageOverlays() {
+      // Clean previous overlay stamp tags
+      for (let i = 0; i < (signerPdfDocument ? signerPdfDocument.numPages : 0); i++) {
+        const overlay = document.getElementById(`signer_page_overlay_${i}`);
+        if (overlay) overlay.innerHTML = '';
+      }
+
+      if (activeSignatureDataUrl && placementPageIdx !== null) {
+        const overlay = document.getElementById(`signer_page_overlay_${placementPageIdx}`);
+        if (!overlay) return;
+
+        const img = document.createElement('img');
+        img.src = activeSignatureDataUrl;
+        img.className = "absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 border border-dashed border-indigo-500 bg-indigo-50/20";
+        img.style.left = `${placementPctX}%`;
+        img.style.top = `${placementPctY}%`;
+        
+        // Setup scaling variables relative to viewport size
+        const baseWidth = 140; // baseline footprint
+        img.style.width = `${baseWidth * placementScale}px`;
+        img.style.height = "auto";
+
+        overlay.appendChild(img);
+      }
+    }
+
+    signerClearAllBtn.addEventListener('click', () => {
+      signerPdfDocument = null;
+      signerPdfBytes = null;
+      placementPageIdx = null;
+      signerFileInput.value = "";
+      clearSignaturePad();
+      
+      signerWorkspace.classList.add('hidden');
+      signerDropZone.classList.remove('hidden');
+    });
+
+    // Compile and Generate signed PDF
+    generateSignedPdfBtn.addEventListener('click', async () => {
+      if (!signerPdfDocument) return;
+      if (!activeSignatureDataUrl || placementPageIdx === null) {
+        showCustomAlert("Please draw and place your signature on at least one document page view.");
+        return;
+      }
+
+      await showLoader("Baking signature into document vectors...", 1500);
+
+      const { jsPDF } = window.jspdf;
+      let signedDoc = null;
+
+      const totalPages = signerPdfDocument.numPages;
+
+      for (let i = 0; i < totalPages; i++) {
+        const pageCanvas = document.getElementById(`signer_page_canvas_${i}`);
+        
+        // If this page contains the signature overlay, bake image inside active canvas pixels first
+        if (i === placementPageIdx) {
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = pageCanvas.width;
+          tempCanvas.height = pageCanvas.height;
+          const tempCtx = tempCanvas.getContext('2d');
+          
+          // Copy original rendered page background
+          tempCtx.drawImage(pageCanvas, 0, 0);
+
+          // Render signature image
+          await new Promise((resolve) => {
+            const sigImg = new Image();
+            sigImg.onload = () => {
+              const sigNativeWidth = 140 * placementScale * 1.5; // matching display scale ratio
+              const sigNativeHeight = (sigImg.height / sigImg.width) * sigNativeWidth;
+
+              const targetX = (placementPctX / 100) * pageCanvas.width - (sigNativeWidth / 2);
+              const targetY = (placementPctY / 100) * pageCanvas.height - (sigNativeHeight / 2);
+
+              tempCtx.drawImage(sigImg, targetX, targetY, sigNativeWidth, sigNativeHeight);
+              resolve();
+            };
+            sigImg.src = activeSignatureDataUrl;
+          });
+
+          // Append page canvas
+          const frameUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
+          const orientation = pageCanvas.width > pageCanvas.height ? 'l' : 'p';
+          
+          if (i === 0) {
+            signedDoc = new jsPDF({ orientation, unit: 'pt', format: [pageCanvas.width, pageCanvas.height] });
+          } else {
+            signedDoc.addPage([pageCanvas.width, pageCanvas.height], orientation);
+          }
+          signedDoc.addImage(frameUrl, 'JPEG', 0, 0, pageCanvas.width, pageCanvas.height);
+
+        } else {
+          // Standard page copy
+          const frameUrl = pageCanvas.toDataURL('image/jpeg', 0.95);
+          const orientation = pageCanvas.width > pageCanvas.height ? 'l' : 'p';
+
+          if (i === 0) {
+            signedDoc = new jsPDF({ orientation, unit: 'pt', format: [pageCanvas.width, pageCanvas.height] });
+          } else {
+            signedDoc.addPage([pageCanvas.width, pageCanvas.height], orientation);
+          }
+          signedDoc.addImage(frameUrl, 'JPEG', 0, 0, pageCanvas.width, pageCanvas.height);
+        }
+      }
+
+      const signedName = document.getElementById('signedFileName').value.trim() || 'signed_documents';
+      signedDoc.save(`${signedName}.pdf`);
+      hideLoader();
+    });
+  </script>
+</body>
+</html>
